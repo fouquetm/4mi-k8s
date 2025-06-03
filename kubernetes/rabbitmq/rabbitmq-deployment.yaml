@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: rabbitmq
+  name: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: lab-rabbitmq
+          env:
+            - name: RABBITMQ_DEFAULT_PASS
+              value: admin
+            - name: RABBITMQ_DEFAULT_USER
+              value: admin
+          image: rabbitmq:3-management
+          livenessProbe:
+            exec:
+              command:
+                - rabbitmq-diagnostics -q ping
+            failureThreshold: 3
+            periodSeconds: 30
+            timeoutSeconds: 30
+          ports:
+            - containerPort: 15672
+              protocol: TCP
+            - containerPort: 5672
+              protocol: TCP
+      restartPolicy: Always

@@ -1,0 +1,84 @@
+# ---------------------------------------------
+# Secrets requis :
+#   - SONAR_TOKEN : Token d'authentification pour SonarQube ou SonarCloud.
+#   - SONAR_PROJECT_KEY : Clé de projet SonarQube ou SonarCloud.
+#   - SONAR_ORGANIZATION : Organisation SonarQube ou SonarCloud.
+#
+# Variables d'environnement :
+#   - PROJECT_FOLDER : Dossier du projet.
+#   - PROJECT_NAME : Nom du projet.
+#   - DOTNET_VERSION : Version de .NET Core.
+#
+# Remarques :
+#   - Remplacez <your-project-key> et <your-organization> par votre clé de projet et votre organisation SonarQube.
+#   - Assurez-vous que le projet est configuré dans SonarQube ou SonarCloud.
+# ---------------------------------------------
+
+name: Sonar Analysis
+
+env:
+  PROJECT_FOLDER: "RabbitMqProductAPI"
+  PROJECT_NAME: "RabbitMqProductAPI"
+  DOTNET_VERSION: "9.x"
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{env.DOTNET_VERSION}}
+
+      - name: Build with dotnet
+        working-directory: ${{env.PROJECT_FOLDER}}
+        run: dotnet build --configuration Release
+  
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{env.DOTNET_VERSION}}
+
+      - name: Run tests
+        working-directory: ${{env.PROJECT_FOLDER}}
+        run: dotnet test --configuration Release
+
+  sonar:
+    runs-on: ubuntu-latest
+    environment:
+      name: "Azure"
+
+    steps:      
+      - uses: actions/checkout@v4
+        with:
+          # Disabling shallow clones is recommended for improving the relevancy of reporting
+          fetch-depth: 0
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: "https://sonarcloud.io"
+        with:
+          projectBaseDir: .
+          args: >
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}

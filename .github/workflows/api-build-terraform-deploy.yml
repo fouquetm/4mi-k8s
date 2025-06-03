@@ -1,0 +1,187 @@
+# ---------------------------------------------
+# 1. Créer une User Assigned Managed Identity dans votre groupe de ressource
+# 2. Créer une Federated credentials dans les settings de la Managed Identity
+#   - Federated credential scenario => Github
+#   - Organization => votre organization Github
+#   - Repository => nom du repo Git qui exécute le github actions
+#   - Entity => Environment
+#   - Environment => le nom de votre environnement
+# 2. Affecter un rôle Contributor à cette Managed Identity sur votre abonnement Azure (Access Control)
+# 3. Créer des secrets dans Github
+#   - AZURE_CLIENT_ID => l'ID se récupère dans l'overview de la Managed Identity
+#   - AZURE_TENANT_ID => se récupère avec la commande az account list => tenantId
+#   - AZURE_SUBSCRIPTION_ID => l'ID se récupère dans l'overview de l'Abonnement
+# 4. Tester la Github Actions
+# ---------------------------------------------
+
+name: Build, Terraform and Deploy API app
+
+on:
+  workflow_dispatch:
+
+#Special permissions required for Azure OIDC authentication
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_FOLDER: "RabbitMqProductAPI"
+      PROJECT_NAME: "RabbitMqProductAPI"
+      DOTNET_VERSION: "9.x"
+      DOTNET_EF_VERSION: "9.0.1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{env.DOTNET_VERSION}}
+
+      - name: Build with dotnet
+        working-directory: ${{env.PROJECT_FOLDER}}
+        run: dotnet build --configuration Release
+
+      - name: Run Unit Tests
+        working-directory: ${{env.PROJECT_FOLDER}}
+        run: dotnet test --no-build --configuration Release
+
+      - name: dotnet publish
+        working-directory: ${{env.PROJECT_FOLDER}}
+        run: dotnet publish -c Release -o myapp
+
+      - name: install dotnet ef
+        working-directory: ${{env.PROJECT_FOLDER}}
+        run: dotnet tool install -g dotnet-ef --version ${{env.DOTNET_EF_VERSION}}
+
+      - name: dotnet bundle migration
+        working-directory: ${{env.PROJECT_FOLDER}}
+        run: dotnet ef migrations bundle --runtime linux-x64 -p ${{env.PROJECT_NAME}}.csproj -o myapp/migrate
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: .net-app
+          path: ${{env.PROJECT_FOLDER}}/myapp
+
+  terraform:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: "Azure"
+    env:
+      #These environment variables are used by the terraform azure provider to setup OIDC authentication.
+      ARM_CLIENT_ID: "${{ secrets.AZURE_CLIENT_ID }}"
+      ARM_SUBSCRIPTION_ID: "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+      ARM_TENANT_ID: "${{ secrets.AZURE_TENANT_ID }}"
+      ARM_USE_AZUREAD: true
+      #This is needed since we are running terraform with read-only permissions
+      ARM_SKIP_PROVIDER_REGISTRATION: true
+      #Terraform backend configuration
+      TF_VAR_RESOURCE_GROUP: "${{ secrets.TF_VAR_RESOURCE_GROUP }}"
+      TF_VAR_STORAGE_ACCOUNT: "${{ secrets.TF_VAR_STORAGE_ACCOUNT }}"
+      TF_VAR_CONTAINER: "${{ secrets.TF_VAR_CONTAINER }}"
+      TF_VAR_STATE_KEY: "${{ secrets.TF_VAR_STATE_KEY }}"
+    outputs:
+      tfplanExitCode: ${{ steps.tf-plan.outputs.exitcode }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform init
+        id: tf-init
+        working-directory: terraform
+        run: |
+          # Exit when any command returns a failure status.
+          set -e
+
+          # Write backend.tfvars.
+          echo 'resource_group_name = "${{env.TF_VAR_RESOURCE_GROUP}}"' | tee backend.tfvars
+          echo 'storage_account_name = "${{env.TF_VAR_STORAGE_ACCOUNT}}"' | tee -a backend.tfvars
+          echo "container_name = \"tfstate\"" | tee -a backend.tfvars
+          echo "key = \"terraform.tfstate\"" | tee -a backend.tfvars
+          echo 'subscription_id = "${{ secrets.AZURE_SUBSCRIPTION_ID }}"' | tee -a backend.tfvars
+          echo 'tenant_id = "${{ secrets.AZURE_TENANT_ID }}"' | tee -a backend.tfvars
+
+          # Initialize Terraform.
+          terraform init -input=false -backend-config="backend.tfvars"
+
+      - name: Terraform plan
+        id: tf-plan
+        working-directory: terraform
+        run: |
+          # Generate Terraform plan
+          terraform plan -var 'project_name=${{ secrets.PROJECT_NAME }}' \
+          -var 'owner_name=${{ secrets.OWNER_NAME }}' \
+          -var 'resource_group_name=${{ secrets.TF_VAR_RESOURCE_GROUP }}' \
+          -var 'log_analytics_workspace_name=${{ secrets.LOG_ANALYTICS_WS_NAME }}' \
+          -var 'location=${{ secrets.LOCATION }}' \
+          -var 'RabbitMQ-Password=${{ secrets.RABBITMQ_PASSWORD }}' \
+          -var 'RabbitMQ-Username=${{ secrets.RABBITMQ_USERNAME }}' \
+          -var 'sql-server-username=${{ secrets.SQL_USERNAME }}' \
+          -var 'sql-server-password=${{ secrets.SQL_PASSWORD }}' \
+          -out=tf.plan
+
+      - name: Terraform apply
+        id: tf-apply
+        working-directory: terraform
+        run: |
+          # Apply the Terraform plan.
+          terraform apply -auto-approve tf.plan
+
+      - name: Extract Terraform Outputs
+        working-directory: terraform
+        run: terraform output -json > terraform_outputs.json
+  
+      - name: Upload Terraform Outputs as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-outputs
+          path: terraform/terraform_outputs.json
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build, terraform]
+    environment:
+      name: "Azure"
+
+    steps:
+      - name: Download Terraform Outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-outputs
+      
+      - name: Read Terraform Outputs
+        run: |
+          WEBAPP_NAME=$(jq -r '.webapp_name.value' terraform_outputs.json)
+          echo "WEBAPP_NAME=${WEBAPP_NAME}" >> $GITHUB_ENV
+
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: .net-app
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      
+      - name: Deploy to ${{ env.WEBAPP_NAME }} WebApp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.WEBAPP_NAME }}
+          slot-name: "Production"
+          package: .
+        env:
+          WEBAPP_NAME: ${{ env.WEBAPP_NAME }}

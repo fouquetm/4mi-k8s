@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mssql
+  name: mssql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mssql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mssql
+    spec:
+      containers:
+        - name: lab-mssql
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: MSSQL_SA_PASSWORD
+              value: P@ssw0rd2023!
+          image: mcr.microsoft.com/mssql/server:2022-latest
+          ports:
+            - containerPort: 1433
+              protocol: TCP
+      restartPolicy: Always

@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: console
+  name: console
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: console
+  template:
+    metadata:
+      labels:
+        app: console
+    spec:
+      containers:
+        - name: lab-console
+          env:
+            - name: RabbitMQ__Hostname
+              value: rabbitmq
+            - name: RabbitMQ__Password
+              value: admin
+            - name: RabbitMQ__Username
+              value: admin
+          image: acrmfolabsform.azurecr.io/matthieuf/pubsub-console:1.0
+      restartPolicy: Always
