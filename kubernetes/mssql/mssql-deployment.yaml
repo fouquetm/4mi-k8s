@@ -27,4 +27,12 @@ spec:
           ports:
             - containerPort: 1433
               protocol: TCP
+          volumeMounts:
+          - mountPath: "/var/opt/mssql"
+            name: volume
+            readOnly: false
+      volumes:
+      - name: volume
+        persistentVolumeClaim:
+          claimName: mssql-pvc
       restartPolicy: Always
