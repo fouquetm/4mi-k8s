@@ -16,6 +16,8 @@ spec:
       labels:
         app: mssql
     spec:
+      securityContext:
+        fsGroup: 10001
       containers:
         - name: lab-mssql
           env:
