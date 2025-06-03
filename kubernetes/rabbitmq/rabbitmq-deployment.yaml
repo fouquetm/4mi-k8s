@@ -34,4 +34,12 @@ spec:
               protocol: TCP
             - containerPort: 5672
               protocol: TCP
+          volumeMounts:
+          - mountPath: "/var/lib/rabbitmq"
+            name: volume
+            readOnly: false
+      volumes:
+      - name: volume
+        persistentVolumeClaim:
+          claimName: rabbitmq-pvc
       restartPolicy: Always
