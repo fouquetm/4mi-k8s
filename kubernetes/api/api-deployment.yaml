@@ -5,7 +5,7 @@ metadata:
     app: api
   name: api
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: api
@@ -16,6 +16,13 @@ spec:
     spec:
       containers:
         - name: api
+          resources:
+            limits:
+              cpu: 500m
+              memory: 100M
+            requests:
+              cpu: 200m
+              memory: 50M
           env:
             - name: ConnectionStrings__DefaultConnection
               value: Server=tcp:mssql,1433;Initial Catalog=RabbitMqDemo;Persist Security Info=False;User ID=sa;Password=P@ssw0rd2023!;Connection Timeout=30;
