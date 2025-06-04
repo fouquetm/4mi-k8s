@@ -28,7 +28,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: mssql-sa-password
-                  name: global-secrets
+                  name: mssql-sa-password
             - name: ConnectionStrings__DefaultConnection
               value: "Server=tcp:mssql,1433;Initial Catalog=RabbitMqDemo;Persist Security Info=False;User ID=sa;Password=$(MSSQL_SA_PASSWORD);Connection Timeout=30;"
             - name: RabbitMQ__Hostname
@@ -40,12 +40,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: rabbitmq-password
-                  name: global-secrets
+                  name: rabbitmq-password
             - name: RabbitMQ__Username
               valueFrom:
                 secretKeyRef:
                   key: rabbitmq-username
-                  name: global-secrets
+                  name: rabbitmq-username
             - name: ASPNETCORE_ENVIRONMENT
               valueFrom:
                 configMapKeyRef:
@@ -59,8 +59,17 @@ spec:
             - name: config-volume
               mountPath: /app/config
               readOnly: true
+            - name: secrets-store
+              mountPath: "/mnt/secrets-store"
+              readOnly: true
       volumes:
         - name: config-volume
           configMap:
             name: api-config
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "keyvault-secrets" # This should match the name of your SecretProviderClass
       restartPolicy: Always
