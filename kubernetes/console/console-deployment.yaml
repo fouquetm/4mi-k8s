@@ -18,7 +18,10 @@ spec:
         - name: lab-console
           env:
             - name: RabbitMQ__Hostname
-              value: rabbitmq
+              valueFrom:
+                configMapKeyRef:
+                  key: rabbitmq-hostname
+                  name: global-config
             - name: RabbitMQ__Password
               value: admin
             - name: RabbitMQ__Username
