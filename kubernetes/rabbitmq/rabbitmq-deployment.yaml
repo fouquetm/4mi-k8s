@@ -18,9 +18,15 @@ spec:
         - name: lab-rabbitmq
           env:
             - name: RABBITMQ_DEFAULT_PASS
-              value: admin
+              valueFrom:
+                secretKeyRef:
+                  name: global-secrets
+                  key: rabbitmq-password
             - name: RABBITMQ_DEFAULT_USER
-              value: admin
+              valueFrom:
+                secretKeyRef:
+                  name: global-secrets
+                  key: rabbitmq-username
           image: rabbitmq:3-management
           livenessProbe:
             exec:
