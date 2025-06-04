@@ -4,3 +4,8 @@ metadata:
   name: api-config
 data:
   dummy-variable: dummy-value
+
+  my.config: |
+    This is a multiline
+    configuration value
+    for the API service.
