@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api
+  annotations:
+    appgw.ingress.kubernetes.io/override-frontend-port: "8099"
+    appgw.ingress.kubernetes.io/health-probe-port: "80"
+    appgw.ingress.kubernetes.io/health-probe-path: "/api/Product/productlist"
+    appgw.ingress.kubernetes.io/health-probe-status-code: "100-599"
+    appgw.ingress.kubernetes.io/health-probe-interval: "30"
+    appgw.ingress.kubernetes.io/health-probe-timeout: "30"
+    appgw.ingress.kubernetes.io/health-probe-unhealthy-threshold: "2"
+spec:
+  ingressClassName: azure-application-gateway
+  rules:
+  - host: aks-4mi-mfo.francecentral.cloudapp.azure.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: /api/*
+        backend:
+          service:
+            name: api
+            port:
+              number: 80
