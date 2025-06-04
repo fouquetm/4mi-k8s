@@ -26,11 +26,11 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: rabbitmq-password
-                  name: global-secrets
+                  name: rabbitmq-password
             - name: RabbitMQ__Username
               valueFrom:
                 secretKeyRef:
                   key: rabbitmq-username
-                  name: global-secrets
+                  name: rabbitmq-username
           image: matthieuf/pubsub-console:1.0
       restartPolicy: Always

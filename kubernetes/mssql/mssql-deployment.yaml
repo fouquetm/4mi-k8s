@@ -26,7 +26,7 @@ spec:
             - name: MSSQL_SA_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: global-secrets
+                  name: mssql-sa-password
                   key: mssql-sa-password
           image: mcr.microsoft.com/mssql/server:2022-latest
           ports:

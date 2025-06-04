@@ -20,12 +20,12 @@ spec:
             - name: RABBITMQ_DEFAULT_PASS
               valueFrom:
                 secretKeyRef:
-                  name: global-secrets
+                  name: rabbitmq-password
                   key: rabbitmq-password
             - name: RABBITMQ_DEFAULT_USER
               valueFrom:
                 secretKeyRef:
-                  name: global-secrets
+                  name: rabbitmq-username
                   key: rabbitmq-username
           image: rabbitmq:3-management
           livenessProbe:
