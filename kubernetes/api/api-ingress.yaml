@@ -3,7 +3,7 @@ kind: Ingress
 metadata:
   name: api
   annotations:
-    appgw.ingress.kubernetes.io/override-frontend-port: "8099"
+    appgw.ingress.kubernetes.io/override-frontend-port: "8084"
     appgw.ingress.kubernetes.io/health-probe-port: "80"
     appgw.ingress.kubernetes.io/health-probe-path: "/api/Product/productlist"
     appgw.ingress.kubernetes.io/health-probe-status-code: "100-599"

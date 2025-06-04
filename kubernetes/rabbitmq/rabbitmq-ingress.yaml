@@ -3,7 +3,7 @@ kind: Ingress
 metadata:
   name: rabbitmq
   annotations:
-    appgw.ingress.kubernetes.io/override-frontend-port: "8098"
+    appgw.ingress.kubernetes.io/override-frontend-port: "8088"
     appgw.ingress.kubernetes.io/health-probe-port: "15672"
     appgw.ingress.kubernetes.io/health-probe-path: "/"
     appgw.ingress.kubernetes.io/health-probe-status-code: "100-599"

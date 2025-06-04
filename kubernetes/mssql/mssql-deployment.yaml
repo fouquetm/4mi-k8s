@@ -33,11 +33,20 @@ spec:
             - containerPort: 1433
               protocol: TCP
           volumeMounts:
-          - mountPath: "/var/opt/mssql"
-            name: volume
-            readOnly: false
+            - mountPath: "/var/opt/mssql"
+              name: volume
+              readOnly: false
+            - name: secrets-store
+              mountPath: "/mnt/secrets-store"
+              readOnly: true
       volumes:
-      - name: volume
-        persistentVolumeClaim:
-          claimName: mssql-pvc
+        - name: volume
+          persistentVolumeClaim:
+            claimName: mssql-pvc
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "keyvault-secrets" # This should match the name of your SecretProviderClass
       restartPolicy: Always

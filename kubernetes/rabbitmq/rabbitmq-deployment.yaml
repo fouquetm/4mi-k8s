@@ -44,8 +44,17 @@ spec:
           - mountPath: "/var/lib/rabbitmq"
             name: volume
             readOnly: false
+          - name: secrets-store
+            mountPath: "/mnt/secrets-store"
+            readOnly: true
       volumes:
       - name: volume
         persistentVolumeClaim:
           claimName: rabbitmq-pvc
+      - name: secrets-store
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: "keyvault-secrets" # This should match the name of your SecretProviderClass
       restartPolicy: Always
