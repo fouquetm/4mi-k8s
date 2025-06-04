@@ -24,7 +24,10 @@ spec:
             - name: ACCEPT_EULA
               value: "Y"
             - name: MSSQL_SA_PASSWORD
-              value: P@ssw0rd2023!
+              valueFrom:
+                secretKeyRef:
+                  name: global-secrets
+                  key: mssql-sa-password
           image: mcr.microsoft.com/mssql/server:2022-latest
           ports:
             - containerPort: 1433

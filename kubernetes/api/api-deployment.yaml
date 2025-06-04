@@ -24,17 +24,28 @@ spec:
               cpu: 200m
               memory: 50M
           env:
+            - name: MSSQL_SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: mssql-sa-password
+                  name: global-secrets
             - name: ConnectionStrings__DefaultConnection
-              value: Server=tcp:mssql,1433;Initial Catalog=RabbitMqDemo;Persist Security Info=False;User ID=sa;Password=P@ssw0rd2023!;Connection Timeout=30;
+              value: "Server=tcp:mssql,1433;Initial Catalog=RabbitMqDemo;Persist Security Info=False;User ID=sa;Password=$(MSSQL_SA_PASSWORD);Connection Timeout=30;"
             - name: RabbitMQ__Hostname
               valueFrom:
                 configMapKeyRef:
                   key: rabbitmq-hostname
                   name: global-config
             - name: RabbitMQ__Password
-              value: admin
+              valueFrom:
+                secretKeyRef:
+                  key: rabbitmq-password
+                  name: global-secrets
             - name: RabbitMQ__Username
-              value: admin
+              valueFrom:
+                secretKeyRef:
+                  key: rabbitmq-username
+                  name: global-secrets
             - name: dummy__variable
               valueFrom:
                 configMapKeyRef:

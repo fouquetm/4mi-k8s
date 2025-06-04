@@ -23,8 +23,14 @@ spec:
                   key: rabbitmq-hostname
                   name: global-config
             - name: RabbitMQ__Password
-              value: admin
+              valueFrom:
+                secretKeyRef:
+                  key: rabbitmq-password
+                  name: global-secrets
             - name: RabbitMQ__Username
-              value: admin
+              valueFrom:
+                secretKeyRef:
+                  key: rabbitmq-username
+                  name: global-secrets
           image: matthieuf/pubsub-console:1.0
       restartPolicy: Always
