@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api
+  annotations:
+    appgw.ingress.kubernetes.io/override-frontend-port: "8099"
+spec:
+  ingressClassName: azure-application-gateway
+  rules:
+  - host: aks-4mi-mfo.francecentral.cloudapp.azure.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: /api/*
+        backend:
+          service:
+            name: api
+            port:
+              number: 80

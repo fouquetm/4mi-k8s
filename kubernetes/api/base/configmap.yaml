@@ -3,7 +3,6 @@ kind: ConfigMap
 metadata:
   name: api-config
 data:
-  environment: development
 
   my.config: |
     This is a multiline
