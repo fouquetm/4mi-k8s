@@ -46,10 +46,10 @@ spec:
                 secretKeyRef:
                   key: rabbitmq-username
                   name: global-secrets
-            - name: dummy__variable
+            - name: ASPNETCORE_ENVIRONMENT
               valueFrom:
                 configMapKeyRef:
-                  key: dummy-variable
+                  key: environment
                   name: api-config
           image: matthieuf/pubsub-api:1.3
           ports:
